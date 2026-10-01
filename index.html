@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deadline Manager</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #4f46e5;
+      --primary-soft: #eef2ff;
+      --danger: #dc2626;
+      --danger-soft: #fef2f2;
+      --warning: #d97706;
+      --warning-soft: #fff7ed;
+      --success: #15803d;
+      --success-soft: #f0fdf4;
+      --shadow: 0 12px 28px rgba(17, 24, 39, 0.07);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 18px 50px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 26px;
+    }
+
+    .brand h1 {
+      margin: 0 0 4px;
+      font-size: clamp(26px, 4vw, 34px);
+      letter-spacing: -0.03em;
+    }
+
+    .brand p { margin: 0; color: var(--muted); }
+
+    .date-pill {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 10px 14px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .auth-panel { margin-bottom: 22px; }
+    .auth-content { padding: 18px 20px; }
+    .auth-form { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; align-items: end; }
+    .auth-form .field { margin: 0; }
+    .auth-form .btn { min-height: 43px; }
+    .auth-account { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .auth-account p, .auth-message { margin: 0; color: var(--muted); font-size: 13px; }
+    .auth-message { padding: 0 20px 16px; }
+    .auth-message.error { color: var(--danger); }
+    .auth-message.success { color: var(--success); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat span { display: block; color: var(--muted); font-size: 13px; margin-bottom: 7px; }
+    .stat strong { font-size: 30px; letter-spacing: -0.04em; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      padding: 20px 20px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-header h2 { margin: 0 0 4px; font-size: 19px; }
+    .panel-header p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .form { padding: 20px; }
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 7px;
+    }
+
+    .field input, .field textarea, .field select {
+      width: 100%;
+      border: 1px solid #d7dbe4;
+      border-radius: 12px;
+      padding: 11px 12px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+      transition: 0.18s ease;
+    }
+
+    .field textarea { min-height: 92px; resize: vertical; }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 15px;
+      font-weight: 700;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { width: 100%; background: var(--primary); color: white; }
+    .btn-secondary { background: #f3f4f6; color: var(--text); }
+    .btn-danger { background: var(--danger-soft); color: var(--danger); }
+    .btn-success { background: var(--success-soft); color: var(--success); }
+
+    .list-panel { min-height: 480px; }
+    .toolbar {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .toolbar input, .toolbar select {
+      border: 1px solid #d7dbe4;
+      border-radius: 11px;
+      padding: 9px 11px;
+      background: #fff;
+      color: var(--text);
+    }
+    .toolbar input { flex: 1 1 200px; min-width: 0; }
+
+    .tasks { padding: 18px; display: grid; gap: 13px; }
+    .empty {
+      border: 1px dashed #ccd2dd;
+      border-radius: 15px;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty strong { color: var(--text); display: block; margin-bottom: 5px; }
+
+    .task {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 16px;
+      background: #fff;
+    }
+    .task.done { opacity: 0.72; }
+    .task.overdue { border-left: 4px solid var(--danger); }
+    .task.urgent { border-left: 4px solid var(--warning); }
+
+    .task-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .task-title { margin: 0; font-size: 16px; }
+    .task.done .task-title { text-decoration: line-through; }
+    .task-desc { margin: 7px 0 11px; color: var(--muted); font-size: 13px; white-space: pre-wrap; }
+
+    .badge-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+    .badge-high { background: var(--danger-soft); color: var(--danger); }
+    .badge-medium { background: var(--warning-soft); color: var(--warning); }
+    .badge-low { background: #f3f4f6; color: #4b5563; }
+    .badge-success { background: var(--success-soft); color: var(--success); }
+
+    .countdown {
+      margin: 12px 0;
+      padding: 10px 11px;
+      border-radius: 11px;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .countdown.overdue { background: var(--danger-soft); color: var(--danger); }
+    .countdown.urgent { background: var(--warning-soft); color: var(--warning); }
+
+    .task-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid #f0f1f4;
+    }
+    .deadline { font-size: 12px; color: var(--muted); }
+    .actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    .actions .btn { padding: 8px 10px; font-size: 12px; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 20;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal {
+      width: min(520px, 100%);
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+    .modal-content { padding: 20px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+    .modal-actions .btn { width: auto; }
+
+    @media (max-width: 900px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .app { padding: 18px 12px 35px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .auth-form { grid-template-columns: 1fr; }
+      .auth-account { align-items: flex-start; flex-direction: column; }
+      .stats { gap: 10px; }
+      .stat { padding: 14px; }
+      .stat strong { font-size: 25px; }
+      .task-footer { align-items: flex-start; flex-direction: column; }
+      .actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Deadline Manager</h1>
+        <p>Catat tugas, pantau deadline, dan selesaikan tepat waktu.</p>
+      </div>
+      <div class="date-pill" id="todayLabel">-</div>
+    </header>
+
+    <section class="panel auth-panel">
+      <div class="panel-header">
+        <h2 id="authHeading">Akun</h2>
+        <p id="authDescription">Memeriksa konfigurasi penyimpanan...</p>
+      </div>
+      <div class="auth-content">
+        <form class="auth-form" id="authForm" hidden>
+          <div class="field">
+            <label for="authEmail">Email</label>
+            <input id="authEmail" type="email" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label for="authPassword">Kata sandi</label>
+            <input id="authPassword" type="password" autocomplete="current-password" minlength="6" required />
+          </div>
+          <button class="btn btn-primary" type="submit">Masuk</button>
+          <button class="btn btn-secondary" id="signUpButton" type="button">Daftar</button>
+        </form>
+        <div class="auth-account" id="authAccount" hidden>
+          <p>Masuk sebagai <strong id="accountEmail"></strong></p>
+          <button class="btn btn-secondary" id="signOutButton" type="button">Keluar</button>
+        </div>
+      </div>
+      <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><span>Total Tugas</span><strong id="totalCount">0</strong></div>
+      <div class="stat"><span>Belum Selesai</span><strong id="pendingCount">0</strong></div>
+      <div class="stat"><span>Mendesak</span><strong id="urgentCount">0</strong></div>
+      <div class="stat"><span>Terlambat</span><strong id="overdueCount">0</strong></div>
+    </section>
+
+    <section class="layout">
+      <section class="panel">
+        <div class="panel-header">
+          <h2 id="formTitle">Tambah Tugas</h2>
+          <p id="storageDescription">Simpan tugas di browser ini.</p>
+        </div>
+        <form class="form" id="taskForm">
+          <input type="hidden" id="editId" />
+
+          <div class="field">
+            <label for="title">Nama tugas</label>
+            <input id="title" type="text" placeholder="Contoh: Laporan Praktikum" required />
+          </div>
+
+          <div class="field">
+            <label for="description">Deskripsi</label>
+            <textarea id="description" placeholder="Catatan singkat (opsional)"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="deadline">Deadline</label>
+            <input id="deadline" type="datetime-local" required />
+          </div>
+
+          <div class="field">
+            <label for="priority">Prioritas</label>
+            <select id="priority">
+              <option value="Rendah">Rendah</option>
+              <option value="Sedang" selected>Sedang</option>
+              <option value="Tinggi">Tinggi</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary" id="submitButton" type="submit">+ Tambah Tugas</button>
+          <button class="btn btn-secondary" id="cancelEdit" type="button" style="display:none; width:100%; margin-top:8px;">Batal Edit</button>
+        </form>
+      </section>
+
+      <section class="panel list-panel">
+        <div class="panel-header">
+          <h2>Daftar Tugas</h2>
+          <p>Urut berdasarkan deadline terdekat.</p>
+        </div>
+
+        <div class="toolbar">
+          <input id="search" type="search" placeholder="Cari tugas..." />
+          <select id="statusFilter">
+            <option value="Semua">Semua status</option>
+            <option value="Belum Selesai">Belum selesai</option>
+            <option value="Selesai">Selesai</option>
+          </select>
+        </div>
+
+        <div class="tasks" id="taskList"></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="editModal">
+    <div class="modal">
+      <div class="panel-header">
+        <h2>Edit Tugas</h2>
+        <p>Perbarui informasi tugas lalu simpan.</p>
+      </div>
+      <form class="modal-content" id="editForm">
+        <div class="field">
+          <label for="editTitle">Nama tugas</label>
+          <input id="editTitle" required />
+        </div>
+        <div class="field">
+          <label for="editDescription">Deskripsi</label>
+          <textarea id="editDescription"></textarea>
+        </div>
+        <div class="field">
+          <label for="editDeadline">Deadline</label>
+          <input id="editDeadline" type="datetime-local" required />
+        </div>
+        <div class="field">
+          <label for="editPriority">Prioritas</label>
+          <select id="editPriority">
+            <option value="Rendah">Rendah</option>
+            <option value="Sedang">Sedang</option>
+            <option value="Tinggi">Tinggi</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="closeModal" type="button">Batal</button>
+          <button class="btn btn-primary" type="submit">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const STORAGE_KEY = 'deadline_manager_tasks';
+    const SUPABASE_URL = 'https://ewbfxboscncxlxpythde.supabase.co/rest/v1/';
+    const SUPABASE_ANON_KEY = 'sb_publishable_1-o_-H-ZI-d4NFCBhAchBQ_WivZqhLt';
+    const supabaseConfigured = SUPABASE_URL.startsWith('https://') && !SUPABASE_ANON_KEY.startsWith('PASTE_');
+    const supabaseClient = supabaseConfigured && window.supabase
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+    let tasks = readLocalTasks();
+    let editingId = null;
+    let currentUser = null;
+    let loadedUserId = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function readLocalTasks() {
+      try {
+        const savedTasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        return Array.isArray(savedTasks) ? savedTasks : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveTasks() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    function setAuthMessage(message, type = '') {
+      $('authMessage').textContent = message;
+      $('authMessage').className = `auth-message ${type}`;
+    }
+
+    function setTaskFormsEnabled(enabled) {
+      for (const form of [$('taskForm'), $('editForm')]) {
+        for (const element of form.elements) element.disabled = !enabled;
+      }
+    }
+
+    function storedDeadline(value) {
+      return supabaseClient ? new Date(value).toISOString() : value;
+    }
+
+    function inputDeadline(value) {
+      const date = new Date(value);
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      return date.toISOString().slice(0, 16);
+    }
+
+    function reportError(action, error) {
+      const message = `${action}: ${error.message || 'Terjadi kesalahan.'}`;
+      if (supabaseClient) setAuthMessage(message, 'error');
+      else window.alert(message);
+    }
+
+    async function loadUserTasks(user) {
+      const { data, error } = await supabaseClient
+        .from('tasks')
+        .select('*')
+        .order('deadline', { ascending: true });
+      if (error) throw error;
+
+      tasks = data || [];
+      if (tasks.length === 0) {
+        const localTasks = readLocalTasks();
+        if (localTasks.length && window.confirm(`Ditemukan ${localTasks.length} tugas di browser ini. Impor ke akun Supabase ini?`)) {
+          const rows = localTasks.map(task => ({
+            user_id: user.id,
+            title: task.title,
+            description: task.description || '',
+            deadline: new Date(task.deadline).toISOString(),
+            priority: task.priority,
+            status: task.status
+          }));
+          const { data: importedTasks, error: importError } = await supabaseClient
+            .from('tasks')
+            .insert(rows)
+            .select('*');
+          if (importError) throw importError;
+          tasks = importedTasks || [];
+          localStorage.removeItem(STORAGE_KEY);
+          setAuthMessage(`${tasks.length} tugas berhasil diimpor ke akun Anda.`, 'success');
+        }
+      }
+      renderTasks();
+    }
+
+    async function handleAuthSession(session) {
+      const user = session?.user || null;
+      currentUser = user;
+      $('authForm').hidden = Boolean(user);
+      $('authAccount').hidden = !user;
+      $('accountEmail').textContent = user?.email || '';
+      setTaskFormsEnabled(!supabaseClient || Boolean(user));
+
+      if (!user) {
+        loadedUserId = null;
+        tasks = [];
+        renderTasks();
+        setAuthMessage('Masuk atau daftar untuk menyimpan tugas ke akun Supabase.');
+        return;
+      }
+
+      if (loadedUserId === user.id) return;
+      loadedUserId = user.id;
+      setAuthMessage('Memuat tugas dari Supabase...');
+      try {
+        await loadUserTasks(user);
+        if (!$('authMessage').classList.contains('success')) {
+          setAuthMessage('Tugas tersinkron dengan Supabase.', 'success');
+        }
+      } catch (error) {
+        loadedUserId = null;
+        tasks = [];
+        renderTasks();
+        throw error;
+      }
+    }
+
+    async function initializeSupabase() {
+      if (!supabaseConfigured) {
+        $('authHeading').textContent = 'Mode lokal';
+        $('authDescription').textContent = 'Isi URL dan public key Supabase di index.html untuk mengaktifkan sinkronisasi.';
+        $('storageDescription').textContent = 'Tugas tersimpan di browser ini sampai Supabase dikonfigurasi.';
+        $('authForm').hidden = true;
+        $('authAccount').hidden = true;
+        setAuthMessage('Data belum tersinkron antarperangkat.');
+        setTaskFormsEnabled(true);
+        return;
+      }
+
+      if (!supabaseClient) {
+        setAuthMessage('Library Supabase gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.', 'error');
+        return;
+      }
+
+      $('authHeading').textContent = 'Akun Supabase';
+      $('authDescription').textContent = 'Masuk atau daftar untuk menyimpan tugas secara online.';
+      $('storageDescription').textContent = 'Tugas tersimpan di akun Supabase Anda.';
+      setTaskFormsEnabled(false);
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        window.setTimeout(() => {
+          handleAuthSession(session).catch(error => reportError('Gagal memuat akun', error));
+        }, 0);
+      });
+
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      await handleAuthSession(data.session);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function formatDate(value) {
+      return new Date(value).toLocaleString('id-ID', {
+        day: '2-digit', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function getTimeInfo(deadline) {
+      const diff = new Date(deadline).getTime() - Date.now();
+      if (diff < 0) return { text: 'Terlambat', className: 'overdue', urgent: true };
+
+      const minutes = Math.floor(diff / 60000);
+      const days = Math.floor(minutes / 1440);
+      const hours = Math.floor((minutes % 1440) / 60);
+      const mins = minutes % 60;
+
+      let text;
+      if (days > 0) text = `${days} hari ${hours} jam lagi`;
+      else if (hours > 0) text = `${hours} jam ${mins} menit lagi`;
+      else text = `${mins} menit lagi`;
+
+      return { text, className: diff <= 86400000 ? 'urgent' : '', urgent: diff <= 86400000 };
+    }
+
+    function priorityClass(priority) {
+      if (priority === 'Tinggi') return 'badge-high';
+      if (priority === 'Sedang') return 'badge-medium';
+      return 'badge-low';
+    }
+
+    function updateSummary() {
+      const pending = tasks.filter(t => t.status !== 'Selesai');
+      const urgent = pending.filter(t => getTimeInfo(t.deadline).urgent && new Date(t.deadline) >= new Date()).length;
+      const overdue = pending.filter(t => new Date(t.deadline) < new Date()).length;
+
+      $('totalCount').textContent = tasks.length;
+      $('pendingCount').textContent = pending.length;
+      $('urgentCount').textContent = urgent;
+      $('overdueCount').textContent = overdue;
+      $('todayLabel').textContent = new Date().toLocaleDateString('id-ID', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+    }
+
+    function renderTasks() {
+      const query = $('search').value.trim().toLowerCase();
+      const status = $('statusFilter').value;
+
+      const filtered = [...tasks]
+        .filter(t => status === 'Semua' || t.status === status)
+        .filter(t => `${t.title} ${t.description || ''}`.toLowerCase().includes(query))
+        .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+      const list = $('taskList');
+
+      if (!filtered.length) {
+        list.innerHTML = `
+          <div class="empty">
+            <strong>${supabaseClient && !currentUser ? 'Masuk untuk melihat tugas.' : tasks.length ? 'Tidak ada tugas yang cocok.' : 'Belum ada tugas.'}</strong>
+            <span>${supabaseClient && !currentUser ? 'Tugas tersimpan aman di akun masing-masing.' : tasks.length ? 'Coba ubah pencarian atau filter.' : 'Tambahkan tugas pertama kamu dari form di sebelah kiri.'}</span>
+          </div>`;
+        updateSummary();
+        return;
+      }
+
+      list.innerHTML = filtered.map(task => {
+        const info = getTimeInfo(task.deadline);
+        const isDone = task.status === 'Selesai';
+        const taskClass = `${isDone ? 'done' : ''} ${!isDone && info.className === 'overdue' ? 'overdue' : ''} ${!isDone && info.className === 'urgent' ? 'urgent' : ''}`;
+
+        return `
+          <article class="task ${taskClass}">
+            <div class="task-head">
+              <div>
+                <h3 class="task-title">${escapeHtml(task.title)}</h3>
+                <p class="task-desc">${escapeHtml(task.description || 'Tidak ada deskripsi.')}</p>
+              </div>
+              <div class="badge-row">
+                <span class="badge ${priorityClass(task.priority)}">${escapeHtml(task.priority)}</span>
+                <span class="badge ${isDone ? 'badge-success' : ''}">${isDone ? 'Selesai' : 'Belum selesai'}</span>
+              </div>
+            </div>
+
+            ${!isDone ? `<div class="countdown ${info.className}">${info.text}</div>` : ''}
+
+            <div class="task-footer">
+              <div class="deadline">Deadline: ${formatDate(task.deadline)}</div>
+              <div class="actions">
+                ${!isDone ? `<button class="btn btn-success" onclick="doneTask(${task.id})">✓ Selesai</button>` : `<button class="btn btn-secondary" onclick="undoTask(${task.id})">↩ Buka Lagi</button>`}
+                <button class="btn btn-secondary" onclick="openEdit(${task.id})">Edit</button>
+                <button class="btn btn-danger" onclick="deleteTask(${task.id})">Hapus</button>
+              </div>
+            </div>
+          </article>`;
+      }).join('');
+
+      updateSummary();
+    }
+
+    $('taskForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (supabaseClient && !currentUser) return;
+      const task = {
+        title: $('title').value.trim(),
+        description: $('description').value.trim(),
+        deadline: storedDeadline($('deadline').value),
+        priority: $('priority').value,
+        status: 'Belum Selesai'
+      };
+      try {
+        if (supabaseClient) {
+          const { data, error } = await supabaseClient
+            .from('tasks')
+            .insert({ ...task, user_id: currentUser.id })
+            .select('*')
+            .single();
+          if (error) throw error;
+          tasks.push(data);
+        } else {
+          tasks.push({ ...task, id: Date.now(), deadline: $('deadline').value });
+          saveTasks();
+        }
+        e.target.reset();
+        $('priority').value = 'Sedang';
+        renderTasks();
+      } catch (error) {
+        reportError('Gagal menambahkan tugas', error);
+      }
+    });
+
+    async function setTaskStatus(id, status) {
+      if (supabaseClient && !currentUser) return;
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      try {
+        if (supabaseClient) {
+          const { error } = await supabaseClient.from('tasks').update({ status }).eq('id', id);
+          if (error) throw error;
+        }
+        task.status = status;
+        if (!supabaseClient) saveTasks();
+        renderTasks();
+      } catch (error) {
+        reportError('Gagal memperbarui status tugas', error);
+      }
+    }
+
+    function doneTask(id) { return setTaskStatus(id, 'Selesai'); }
+    function undoTask(id) { return setTaskStatus(id, 'Belum Selesai'); }
+
+    async function deleteTask(id) {
+      if (supabaseClient && !currentUser) return;
+      if (!confirm('Hapus tugas ini?')) return;
+      try {
+        if (supabaseClient) {
+          const { error } = await supabaseClient.from('tasks').delete().eq('id', id);
+          if (error) throw error;
+        }
+        tasks = tasks.filter(t => t.id !== id);
+        if (!supabaseClient) saveTasks();
+        renderTasks();
+      } catch (error) {
+        reportError('Gagal menghapus tugas', error);
+      }
+    }
+
+    function openEdit(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      editingId = id;
+      $('editTitle').value = task.title;
+      $('editDescription').value = task.description || '';
+      $('editDeadline').value = inputDeadline(task.deadline);
+      $('editPriority').value = task.priority;
+      $('editModal').classList.add('show');
+    }
+
+    function closeEdit() {
+      editingId = null;
+      $('editModal').classList.remove('show');
+    }
+
+    $('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (supabaseClient && !currentUser) return;
+      const task = tasks.find(t => t.id === editingId);
+      if (!task) return;
+      const updates = {
+        title: $('editTitle').value.trim(),
+        description: $('editDescription').value.trim(),
+        deadline: storedDeadline($('editDeadline').value),
+        priority: $('editPriority').value
+      };
+      try {
+        if (supabaseClient) {
+          const { data, error } = await supabaseClient.from('tasks').update(updates).eq('id', editingId).select('*').single();
+          if (error) throw error;
+          Object.assign(task, data);
+        } else {
+          Object.assign(task, { ...updates, deadline: $('editDeadline').value });
+          saveTasks();
+        }
+        closeEdit();
+        renderTasks();
+      } catch (error) {
+        reportError('Gagal mengedit tugas', error);
+      }
+    });
+
+    $('closeModal').addEventListener('click', closeEdit);
+    $('editModal').addEventListener('click', (e) => {
+      if (e.target.id === 'editModal') closeEdit();
+    });
+    $('search').addEventListener('input', renderTasks);
+    $('statusFilter').addEventListener('change', renderTasks);
+    $('authForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email: $('authEmail').value.trim(),
+        password: $('authPassword').value
+      });
+      if (error) reportError('Gagal masuk', error);
+    });
+    $('signUpButton').addEventListener('click', async () => {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: $('authEmail').value.trim(),
+        password: $('authPassword').value
+      });
+      if (error) {
+        reportError('Gagal mendaftar', error);
+      } else if (data.session) {
+        setAuthMessage('Akun berhasil dibuat.', 'success');
+      } else {
+        setAuthMessage('Akun dibuat. Periksa email untuk konfirmasi sebelum masuk.', 'success');
+      }
+    });
+    $('signOutButton').addEventListener('click', async () => {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) {
+        reportError('Gagal keluar', error);
+        return;
+      }
+      currentUser = null;
+      loadedUserId = null;
+      tasks = [];
+      renderTasks();
+    });
+
+    renderTasks();
+    initializeSupabase().catch(error => reportError('Gagal menghubungkan ke Supabase', error));
+    setInterval(renderTasks, 30000);
+  </script>
+</body>
+</html>
